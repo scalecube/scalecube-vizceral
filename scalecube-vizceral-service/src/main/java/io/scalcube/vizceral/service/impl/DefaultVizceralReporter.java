@@ -1,16 +1,20 @@
 package io.scalcube.vizceral.service.impl;
 
+import io.scalecube.cluster.membership.IdGenerator;
 import io.scalecube.services.Microservices;
 import io.scalecube.services.annotations.AfterConstruct;
 import io.scalecube.services.annotations.Inject;
 
+import io.scalcube.vizceral.service.api.Node;
+import io.scalcube.vizceral.service.api.ReporterEvent;
 import io.scalcube.vizceral.service.api.VizceralConnection;
+import io.scalcube.vizceral.service.api.VizceralRegionService;
 import io.scalcube.vizceral.service.api.VizceralReporter;
 
 import org.jctools.maps.NonBlockingHashMap;
 
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -23,14 +27,25 @@ public class DefaultVizceralReporter implements VizceralReporter {
 
   @Inject
   Microservices ms;
+
+  VizceralRegionService resionService;
+
   private String displayName;
+  private String region;
+  private String id;
 
   public static class Builder {
     Duration interval = Duration.ofSeconds(5);
     private String displayName;
+    private String region;
 
     DefaultVizceralReporter build() {
       return new DefaultVizceralReporter(this);
+    }
+
+    public Builder region(String region) {
+      this.region = region;
+      return this;
     }
 
     public Builder displayName(String displayName) {
@@ -42,6 +57,26 @@ public class DefaultVizceralReporter implements VizceralReporter {
   @AfterConstruct
   public void start() {
     this.name = ms.id();
+    this.resionService = this.ms.call().create().api(VizceralRegionService.class);
+
+    this.resionService.registerReporter(Flux.just(new ReporterEvent(this.region,
+        ms.id(),
+        new Node(this.region, this.name, this.displayName))))
+        .subscribe();
+
+    DirectProcessor<ReporterEvent> events = DirectProcessor.create();
+
+    Flux.interval(Duration.ofSeconds(5)).subscribe(next -> {
+      
+      Flux.fromStream(connections.values().stream())
+          .map(item -> new ReporterEvent(this.region, this.name(), item))
+          .subscribe(event -> {
+            events.onNext(event);
+          });
+    });
+
+    this.resionService.registerReporter(events).subscribe();
+
   }
 
   public static Builder builder() {
@@ -51,23 +86,28 @@ public class DefaultVizceralReporter implements VizceralReporter {
   private DefaultVizceralReporter(Builder builder) {
     this.interval = builder.interval;
     this.displayName = builder.displayName;
+    this.region = builder.region;
   }
 
-  @Override
-  public Mono<String> name() {
-    return Mono.just(displayName == null ? name : displayName);
+
+  public String name() {
+    return name;
   }
 
-  @Override
-  public Flux<VizceralConnection> metrics() {
-    return Flux.interval(this.interval)
-        .transform(transformer -> Flux.fromStream(connections.values().stream())
-            .filter(untouched -> untouched.touch()));
+  // inter
+  public VizceralConnection inbound(String source) {
+    return connections.computeIfAbsent(key(source, this.name),
+        newSource -> compute(source, this.name));
   }
 
-  public VizceralConnection target(String target) {
-    return connections.computeIfAbsent(target,
-        newTarget -> compute(this.name, newTarget));
+  // inter
+  public VizceralConnection outbound(String target) {
+    return connections.computeIfAbsent(key(this.name, target),
+        newTarget -> compute(this.name, target));
+  }
+
+  private static String key(String source, String target) {
+    return source + "=>" + target;
   }
 
   private VizceralConnection compute(String source, String target) {

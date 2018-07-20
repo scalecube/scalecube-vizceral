@@ -1,5 +1,7 @@
 package io.scalcube.vizceral.service.api;
 
+import io.scalecube.cluster.membership.IdGenerator;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,6 +18,7 @@ public class VizceralConnection {
 
   @JsonIgnore
   AtomicBoolean dirty = new AtomicBoolean(false);
+  private String id;
 
   public VizceralConnection() {}
 
@@ -24,14 +27,22 @@ public class VizceralConnection {
     this.target = builder.target;
     this.clazz = builder.clazz;
     this.metrics = builder.metrics;
+    this.id = builder.id;
   }
 
+  
+
+  public String id() {
+    return this.id;
+  }
+  
   public static Builder builder() {
     return new Builder();
   }
 
   public static class Builder {
 
+    public String id;
     public String source;
     public String target;
     public ClassType clazz;
@@ -59,6 +70,7 @@ public class VizceralConnection {
 
 
     public VizceralConnection build() {
+      this.id = IdGenerator.generateId();
       return new VizceralConnection(this);
     }
 
@@ -101,7 +113,30 @@ public class VizceralConnection {
     return "VizceralConnection [source=" + source + ", target=" + target + ", metrics=" + metrics + ", clazz=" + clazz
         + "]";
   }
-
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((id == null) ? 0 : id.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    VizceralConnection other = (VizceralConnection) obj;
+    if (id == null) {
+      if (other.id != null)
+        return false;
+    } else if (!id.equals(other.id))
+      return false;
+    return true;
+  }
 
 }

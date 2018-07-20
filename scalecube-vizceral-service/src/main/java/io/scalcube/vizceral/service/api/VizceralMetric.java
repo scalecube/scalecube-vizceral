@@ -2,6 +2,11 @@ package io.scalcube.vizceral.service.api;
 
 public class VizceralMetric {
 
+  @Override
+  public String toString() {
+    return "VizceralMetric [danger=" + danger + ", normal=" + normal + "]";
+  }
+
   Double danger = 0.0;
   Double normal = 0.0;
 

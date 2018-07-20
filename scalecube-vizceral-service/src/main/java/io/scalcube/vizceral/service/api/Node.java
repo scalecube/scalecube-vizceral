@@ -1,14 +1,14 @@
 package io.scalcube.vizceral.service.api;
 
-public class AddNodeRequest {
+public class Node {
 
   private String name;
   private String region;
   private String displayName;
 
-  public AddNodeRequest() {};
+  public Node() {};
 
-  public AddNodeRequest(String region, String name, String displayName) {
+  public Node(String region, String name, String displayName) {
     this.name = name;
     this.region = region;
     this.displayName = displayName;

@@ -14,9 +14,6 @@ public interface VizceralRegionService {
   Flux<VizceralNode> listen();
   
   @ServiceMethod
-  public Mono<Boolean> updateMetric(UpdateMetricRequest request);
-  
-  @ServiceMethod
-  public Mono<Boolean> addNode(AddNodeRequest request);
+  Flux<Boolean> registerReporter(Flux<ReporterEvent> events);
   
 }

@@ -1,5 +1,7 @@
 package io.scalcube.vizceral.service.api;
 
+import io.scalecube.cluster.membership.IdGenerator;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -8,17 +10,19 @@ import java.util.stream.Collectors;
 
 public class VizceralNode {
 
+  private String id;
+  
   @JsonProperty(value = "class")
-  ClassType clazz;
+  private ClassType clazz;
 
-  RendererType renderer;
-  String name;
-  Integer maxVolume;
-  Long updated;
-  Long serverUpdateTime;
+  private RendererType renderer;
+  private String name;
+  private Integer maxVolume;
+  private Long updated;
+  private Long serverUpdateTime;
 
-  List<VizceralNode> nodes;
-  List<VizceralConnection> connections;
+  private List<VizceralNode> nodes;
+  private List<VizceralConnection> connections;
 
   private String displayName;
 
@@ -35,7 +39,12 @@ public class VizceralNode {
     
     List<VizceralNode> nodes = new CopyOnWriteArrayList();
     List<VizceralConnection> connections = new CopyOnWriteArrayList();
-   
+    private String id;
+    
+    public Builder(String id) {
+      this.id = id;
+    }
+
     public Builder renderer(RendererType rendererType) {
       this.renderer = rendererType;
       return this;
@@ -99,6 +108,7 @@ public class VizceralNode {
     this.clazz = builder.clazz;
     this.updated = builder.updated;
     this.maxVolume = builder.maxVolume;
+    this.id = builder.id;
   }
 
   public RendererType renderer() {
@@ -126,7 +136,7 @@ public class VizceralNode {
   }
 
   public static Builder builder() {
-    return new Builder();
+    return new Builder(IdGenerator.generateId());
   }
   
   public void remove(String name) {
